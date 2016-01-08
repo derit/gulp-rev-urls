@@ -1,0 +1,34 @@
+{
+  "name": "gulp-rev-urls",
+  "version": "0.1.0",
+  "description": "Gulp plugin for flexibly revving URLs by injecting a file hash.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "asset",
+    "bust",
+    "cache",
+    "digest",
+    "expire",
+    "fingerprint",
+    "gulpplugin",
+    "hash",
+    "infinite",
+    "md5",
+    "optimize",
+    "replace",
+    "rev",
+    "revving",
+    "revision",
+    "url",
+    "version"
+  ],
+  "author": "Dave Twaddell",
+  "license": "MIT",
+  "dependencies": {
+    "object-assign": "^4.0.1",
+    "through2": "^2.0.0"
+  }
+}
