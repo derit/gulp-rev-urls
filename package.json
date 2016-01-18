@@ -1,7 +1,8 @@
 {
   "name": "gulp-rev-urls",
-  "version": "0.1.0",
-  "description": "Gulp plugin for flexibly revving URLs by injecting a file hash.",
+  "version": "1.0.0",
+  "description": "Gulp plugin for replacing URLs based on a manifest, especially well-suited for revving asset URLs.",
+  "respository": "twadzilla/gulp-rev-urls",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

@@ -1,83 +1,83 @@
 "use strict";
 
-var through = require('through2');
-var assign = require('object-assign');
-var path = require('path');
+var Through = require('through2');
+var Assign = require('object-assign');
+var Path = require('path');
+var Url = require('url');
 
 var PLUGIN_NAME = 'gulp-rev-urls';
 
 module.exports = revUrls;
 
 var defaults = {
-        searchRegex: /(?:url\(["']?(.+?)['"]?\)|\s(?:src|href)=["'](.+?)['"])/g,
-        urlRegex: /^(?!https?:|\/\/).+\.[^/]+$/,
+        manifest: {},
+        parse: parseJson,
+        transform: null,
+        pattern: /(?:url\(["']?(.+?)['"]?\)|\s(?:src|href)=["'](.+?)['"])/g,
+        revise: reviseUrl,
         docRoot: null,
-        resolveUrl: resolveUrl,
-        mapFilePath: mapFilePath,
-        getFileHash: getFileHash,
-        fileHashes: {},
-        hashLength: 8,
-        formatUrl: formatUrl,
+        debug: false,
     };
 
 function revUrls(options) {
+    var settings = Assign({}, defaults, options);
+    var manifest = settings.manifest;
 
-    var settings = assign({}, defaults, options);
+    if (typeof manifest == 'string') {
+        var contents = require('fs').readFileSync(manifest, 'utf8');
+        manifest = settings.parse(contents, settings);
+    }
 
-    return through.obj(function (file, enc, cb) {
+    if (settings.transform) {
+        var obj = {};
+        for (var key in manifest) {
+            settings.transform(obj, key, manifest[key], settings);
+        }
+        manifest = obj;
+    }
 
+    if (settings.debug) { console.log("Manifest:", manifest); }
+
+    return Through.obj(function (file, enc, cb) {
         if (file.isStream()) {
             throw new Error(PLUGIN_NAME + ': Streams not supported');
         }
-
         if (file.isBuffer() && !file.isNull()) {
-            replaceContents(file, settings);
+            replaceContents(file, manifest, settings);
         }
         cb(null, file);
     });
 }
 
-function replaceContents(file, settings) {
+
+function parseJson(contents, settings) {
+    return JSON.parse(contents);
+}
+
+function replaceContents(file, manifest, settings) {
+    var baseUrl = Url.resolve('/', Path.relative(settings.docRoot || file.base, file.path));
+    if (settings.debug) { console.log(baseUrl, ':'); }
+
     file.contents = new Buffer(
-        String(file.contents).replace(settings.searchRegex, function (match) {
+        String(file.contents).replace(settings.pattern, function (match) {
             for (var i = 1; i < arguments.length; i++) {
                 if (arguments[i]) {
-                    return replaceUrl(arguments[i], match, file, settings);
+                    return replaceMatch(arguments[i], match, baseUrl, manifest, settings);
                 }
             }
         })
     );
 }
 
-function replaceUrl(url, match, file, settings) {
-    if (!settings.urlRegex || settings.urlRegex.test(url)) {
-        var filePath = settings.resolveUrl(url, file, settings);
-        var mappedPath = settings.mapFilePath(filePath, settings);
-        var hash = settings.getFileHash(mappedPath, settings);
-        if (hash) {
-            var newUrl = settings.formatUrl(url, hash, settings);
-            return match.replace(url, newUrl);
-        }
+function replaceMatch(origUrl, match, baseUrl, manifest, settings) {
+    var fullUrl = Url.resolve(baseUrl, origUrl);
+    var revUrl = settings.revise(origUrl, fullUrl, manifest, settings);
+    if (settings.debug && origUrl !== revUrl) {
+        console.log('\t', origUrl, '==>', revUrl);
     }
-    return match;
+    return match.replace(origUrl, revUrl);
 }
 
-function resolveUrl(url, file, settings) {
-    var urlPath = url.replace(/[?#].*$/, '');
-    var basePath = urlPath.charAt(0) == '/' ? settings.docRoot || file.base : path.dirname(file.path);
-    return path.join(basePath, urlPath);
-}
-
-function mapFilePath(filePath, settings) {
-    return filePath;
-}
-
-function getFileHash(filePath, settings) {
-    var hash = settings.fileHashes[filePath];
-    return hash && hash.substr(0, settings.hashLength);
-}
-
-function formatUrl(url, hash, settings) {
-    var dotIndex = url.lastIndexOf('.');
-    return url.substr(0, dotIndex) + '.' + hash + url.substr(dotIndex);
+function reviseUrl(origUrl, fullUrl, manifest, settings) {
+    return manifest[fullUrl] || origUrl;
 }
