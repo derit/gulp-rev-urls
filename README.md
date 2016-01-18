@@ -2,6 +2,8 @@
 
 Gulp plugin for replacing URLs based on a manifest, especially well-suited for revving asset URLs. Handles relative URLs and is compatible with virtually any manifest format e.g. `gulp-rev` or `gulp-hasher`.
 
+https://github.com/twadzilla/gulp-rev-urls
+
 ## Install:
 
 `npm install --save-dev gulp-rev-urls`
@@ -230,3 +232,6 @@ gulp.task('min-html', ['hash-img', 'min-css', 'min-js'], function () {
     );
 });
 ```
+
+## License
+MIT @ Dave Twaddell
