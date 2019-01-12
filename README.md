@@ -2,11 +2,11 @@
 
 Gulp plugin for replacing URLs based on a manifest, especially well-suited for revving asset URLs. Handles relative URLs and is compatible with virtually any manifest format e.g. `gulp-rev` or `gulp-hasher`.
 
-https://github.com/twadzilla/gulp-rev-urls
+https://github.com/derit/gulp-rev-urls
 
 ## Install:
 
-`npm install --save-dev gulp-rev-urls`
+`npm install --save-dev https://github.com/derit/gulp-rev-urls
 
 ## Usage:
 
@@ -28,14 +28,12 @@ Note: In callback functions, `settings` refers to the default options, overridde
 
 Maps original URLs to revised URLs. If passed as a string, `manifest` is interpreted as a file path and parsed into an object with `options.parse`.
 
-Typically, URLs should be formatted as root-relative, i.e. begin with `/`, or absolute:
+example:
 
 ```js
 {
-    "/img/foo.jpg": "/img/foo-bar.jpg",
-    "/css/foo.css": "/css/foo.css?bar",
-    "/a/b/c": "/d/e",
-    "/foo/bar": "http://foo/bar",
+    "foo.jpg": "foo-a43eas.jpg",
+    "foo.css": "foo.css-aa2w3a"
 }
 ```
 
@@ -69,169 +67,28 @@ Revises and returns a single URL that matched a capture group of `options.patter
 
 The `expandedUrl` argument reflects the root-relative or absolute `originalUrl` after resolving any relative path segments i.e. `..` or `.`.
 
-For example, to preserve relative URLs and the query string/hash:
+For example, to modif or add domain to original file hash
 
 ```js
 var urlOptions = {
         manifest: {
-            '/foo/bar.jpg': '/foo/bar-12345678.jpg'
+            'bar.jpg': 'bar-affa23.jpg'
         },
         transform: function (obj, key, val) {
-            obj[key] = val.substr(val.lastIndexOf('-'));
-        },
-        revise: function (origUrl, fullUrl, manifest) {
-            var revUrl = manifest[fullPath.replace(/[?#].*$/,'')];
-            if (revUrl) {
-                var origParts = origUrl.split(/[?#]/);
-                var origPath = origParts.shift();
-                var origBase = origPath.substr(0, origPath.lastIndexOf('.'));
-                return origBase + revUrl + origParts.join('');
-            }
-            return origUrl;
+            obj[key] =  "https://your-cdn.com/asset/dist/"+val
         }
+        
     }
 ```
 
 Defaults to: `manifest[fullUrl] || origUrl`
-
-### options.docRoot : `string`
-
-File path to the document root, i.e. the URL `/`.
-
-Defaults to: `file.base`
-
+ 
 ### options.debug : `boolean`
 
 When true, verbose logs are printed to console.
 
 Defaults to: `false`
-
-
-## Examples
-
-Complete example with `gulp-rev`:
-
-```js
-var gulp = require('gulp');
-var minifyCss = require('gulp-minify-css');
-var uglify = require('gulp-uglify');
-var htmlmin = require('gulp-htmlmin');
-var hasher = require('gulp-hasher');
-var revUrls = require('gulp-rev-urls');
-
-var urlOptions = {
-        manifest: 'dist/rev-manifest.json',
-        docRoot: 'src/public',
-        // Converts relative file path to root-relative URL
-        transform: function (obj, key, val, settings) {
-            var slash = key.indexOf('/');
-            obj[key.substr(slash)] = val.substr(slash);
-        }
-    };
-
-gulp.task('hash-img', function () {
-    return (
-        gulp.src('src/**/*.+(jpg|jpeg|gif|png|svg)')
-            .pipe(rev())
-            .pipe(gulp.dest('dist'))
-            .pipe(rev.manifest())
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-css', ['hash-img'], function () {
-    return (
-        gulp.src('src/**/*.css')
-            .pipe(revUrls(urlOptions))
-            .pipe(minifyCss())
-            .pipe(rev())
-            .pipe(gulp.dest('dist'))
-            .pipe(rev.manifest('dist/rev-manifest.json', {base: 'dist', merge: true}))
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-js', function () {
-    return (
-        gulp.src('src/**/*.js')
-            .pipe(uglify())
-            .pipe(rev())
-            .pipe(gulp.dest('dist'))
-            .pipe(rev.manifest('dist/rev-manifest.json', {base: 'dist', merge: true}))
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-html', ['hash-img', 'min-css', 'min-js'], function () {
-    return (
-        gulp.src('src/**/*.html')
-            .pipe(revUrls(urlOptions))
-            .pipe(htmlmin())
-            .pipe(gulp.dest('dist'))
-    );
-});
-```
-
-
-A complete example with `gulp-hasher`:
-
-```js
-var gulp = require('gulp');
-var minifyCss = require('gulp-minify-css');
-var uglify = require('gulp-uglify');
-var htmlmin = require('gulp-htmlmin');
-var hasher = require('gulp-hasher');
-var revUrls = require('gulp-rev-urls');
-var path = require('path');
-var url = require('url');
-
-var urlOptions = {
-        manifest: hasher.hashes,
-        docRoot: 'src/public',
-        // Converts absolute file paths to root-relative URLs
-        //  and appends content hash as query string
-        transform: function (obj, key, val, settings) {
-            var rootRelUrl = url.resolve('/', path.relative(path.resolve(settings.docRoot), key));
-            obj[rootRelUrl] = rootRelUrl + '?' + val.substr(0,8);
-        }
-    };
-
-gulp.task('hash-img', function () {
-    return (
-        gulp.src('src/**/*.+(jpg|jpeg|gif|png|svg)')
-            .pipe(hasher())
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-css', ['hash-img'], function () {
-    return (
-        gulp.src('src/**/*.css')
-            .pipe(revUrls(urlOptions))
-            .pipe(minifyCss())
-            .pipe(hasher())
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-js', function () {
-    return (
-        gulp.src('src/**/*.js')
-            .pipe(uglify())
-            .pipe(hasher())
-            .pipe(gulp.dest('dist'))
-    );
-});
-
-gulp.task('min-html', ['hash-img', 'min-css', 'min-js'], function () {
-    return (
-        gulp.src('src/**/*.html')
-            .pipe(revUrls(urlOptions))
-            .pipe(htmlmin())
-            .pipe(gulp.dest('dist'))
-    );
-});
-```
+ 
 
 ## License
-MIT @ Dave Twaddell
+MIT 
