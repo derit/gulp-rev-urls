@@ -70,7 +70,8 @@ function replaceContents(file, manifest, settings) {
 }
 
 function replaceMatch(origUrl, match, baseUrl, manifest, settings) {
-    var fullUrl = Url.resolve(baseUrl, origUrl);
+   // var fullUrl = Url.resolve(baseUrl, origUrl);
+   var fullUrl = origUrl
     var revUrl = settings.revise(origUrl, fullUrl, manifest, settings);
     if (settings.debug && origUrl !== revUrl) {
         console.log('\t', origUrl, '==>', revUrl);
